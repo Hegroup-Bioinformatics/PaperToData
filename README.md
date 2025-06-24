@@ -8,17 +8,24 @@
 ## Installation
 1. Clone the repository: 
 ```bash 
-git clone https://github.com/Hegroup-Bioinformatics/PaperToData.git
+> git clone https://github.com/Hegroup-Bioinformatics/PaperToData.git
 ```
 
 2. Install dependencies:
 ```bash
-pip install -r requirements.txt
+> pip install -r requirements.txt
 ```
 
-3. Setup .env files: 
+3. Setup .env files:  
+
 	- langchain.env 
 	- llm.env
+
+	Make sure that the fields are encapsulated as strings:
+	```cpp
+	FIELD_NAME="value_here"
+	```
+
 	### langchain.env
 	```cpp
 	LANGCHAIN_ENDPOINT={YOUR_ENDPOINT}
@@ -37,11 +44,11 @@ pip install -r requirements.txt
 ## Usage
 To run the program:
 ```cpp
-python3 ./mainCSV.py     		
+> python3 ./mainCSV.py     		
 ```
 If python3 does not work:
 ```cpp
-python ./mainCSV.py
+> python ./mainCSV.py
 ```
 When running the program you will be prompted to enter a file for the output csv in the data folder. Then you will choose an input method, and lastly, a input file location if you choose csv or space seperated.  
 Your file structure should look like this:
@@ -50,13 +57,14 @@ PaperToData/
 	data/
 	  └──data.csv					 //must be csv
 	pmid_input/
-		└──input.csv            	//for space seperated, can be txt
+		└──input.csv         //for space seperated, can be txt
 ```
 PaperToData makes a folder for raw_xml, storing all retrieved articles, it is not necessary to keep them after program runs but is helpful for debugging.
 
 ## Example 
 In this example we will use PudMed to retrieve 100 PMIDs for articles related to covid-19 vaccine.
 Pressing display options can enable you to select the number per page as well as format. Select PMID in the dropdown menu.
+
 ![Screenshot](./readme_imgs/search.png)
 
 After you should get this:
@@ -68,7 +76,7 @@ Make sure that there is a valid csv in the data folder.
 
 Run the program:
 ```cpp
-	python3 ./mainCSV.py
+	> python3 ./mainCSV.py
 	Welcome to Paper to Neo4j
 	Model Loaded 
 
