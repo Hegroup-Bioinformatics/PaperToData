@@ -1,5 +1,19 @@
 # PaperToData
+A python program that takes inputs of PMIDs in csv, space seperated, or manual inputs. The program outputs a vaccine csv with fields:
+- pmcid
+- vaccine_name
+- vaccine_target_pathogen 
+- vaccine_target_host
+- vaccine_model_host 
+- vaccine_delivery_method
+- vaccine_manufacturer 
+- vaccine_storage_method
+- vaccine_stage 
+- vaccine_license 
+- vaccine_antigen 
+- vaccine_formulation 
 
+The program utilizes LLMs to parse and read full-legnth papers and retrieves the specific fields.
 ## Table of Contents 
 - [Installation](#installation) 
 - [Usage](#usage) 
