@@ -9,7 +9,7 @@ import json
 import csv
 
 #set entrez email
-Entrez.email=""
+Entrez.email="asamatt@umich.edu"
 def welcome():
   print("Welcome to Paper to Neo4j")
   
@@ -33,6 +33,14 @@ def load_langchain():
   os.environ["LANGCHAIN_ENDPOINT"] = os.getenv("LANGCHAIN_ENDPOINT")
   print("Langchain Loaded \n")
   
+def load_parsed():
+  parsed = set()
+  if os.path.exists("output/successful.txt"):
+    with open("output/successful.txt", mode="r") as file:
+      for line in file:
+        parsed.add(line)
+  return parsed
+  
 def convert_pmid_to_pmcid(pmid):
   url = f"https://www.ncbi.nlm.nih.gov/pmc/utils/idconv/v1.0/?ids={pmid}&format=json"
   response = requests.get(url)
@@ -46,9 +54,13 @@ def fetch_full_text_pmcid(pmcid):
   response = handle.read()
   handle.close()
   full_text = response.decode("utf-8")
-  output_file = os.path.join("raw_xml", f"{pmcid}.txt")
-  with open(output_file, "w", encoding="utf-8") as file:
-    file.write(full_text)
+  #output_file = os.path.join("raw_xml", f"{pmcid}.txt")
+  #with open(output_file, "w", encoding="utf-8") as file:
+    #file.write(full_text)
+  os.makedirs("output", exist_ok=True)
+  output_file = os.path.join("output", "successful.txt")
+  with open(output_file, "a", encoding="utf-8") as file:
+    file.write(pmcid + '\n')
   try:
     cleaned = re.sub(r"<xml.*?</xml>|<xref.*?/xref>", "", full_text)
     #if (cleaned): print("clean")
@@ -66,6 +78,12 @@ def fetch_full_text_pmcid(pmcid):
     print(e)
     return None, None, None
 
+def fetch_abstract(pmcid):
+  handle = Entrez.efetch(db="pmc", id=pmcid, rettype="abstract", retmode="xml")
+  response = handle.read()
+  handle.close()
+  abstract = response.decode("utf-8")
+  
 
 def create_full_text_json(text):
   json_generate = ChatPromptTemplate.from_messages([
@@ -73,8 +91,9 @@ def create_full_text_json(text):
       You are a helpful assistant that extracts information from a PubMed article and formats it as JSON. Your task is to only produce a JSON from a vaccine design article.
       
 
-      - Crate a JSON with the following keys:
-						"vaccine_name": The specific name of the vaccine as given in the paper (ensure this is unique and not just a generic description).
+      - Create a JSON with the following keys:
+						"vaccine_name": The specific name of the vaccine as given in the paper, if one cannot be found, generate one, ensure that the vaccine_name_generated is set to true in this case.
+            "vaccine_name_generated": This is a boolean on whether or not you generated the vaccine name. (true or false)
 						"vaccine_target_pathogen": the specific pathogen the vaccine is designed to target
 						"vaccine_target_host": The host the vaccine is designed to be in
 						"vaccine_model_host": The host the accine is experimented in
@@ -85,12 +104,11 @@ def create_full_text_json(text):
 						"vaccine_license": The license information if the vaccine stage is "licensed"; otherwise, this should be an empty string.
 						"vaccine_antigen": The antigen that the vaccine uses
 						"vaccine_formulation": The vaccine design, specific on the proteins
+            "vaccine_gene": If there are genetic details pertinent to the vaccine, list them here.
       
       Additional Instructions:
       - If a required piece of information cannot be directly found in the article, assign an empty string ("") to that key.
       - Ensure that the output is valid JSON.
-      - **Clarity on Unimportant Vaccine Entries:** If the vaccine information is only generic (for example, if the vaccine name is merely "multi-epitope mRNA vaccine" without any additional details that make it unique), consider that information unimportant and do not output a Vaccine JSON object.
-
          """),
          ("human", "The PubMed article to convert to json is: {text}")])
   
@@ -167,5 +185,3 @@ def main():
 
 
 
-if __name__ == "__main__":
-  main()
