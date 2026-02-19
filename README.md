@@ -1,6 +1,6 @@
-# Matt's PaperToData Program 
+# PubMineLLM
 
-This python program, developed by Matt Ataso in He Lab, takes inputs of PMIDs in csv, space seperated, or manual inputs. The program outputs a vaccine csv with fields:
+Primarily developed by Matt Ataso in He Lab, PubMineLLM takes inputs of PMIDs in csv, space seperated, or manual inputs. The program outputs a vaccine csv with fields:
 - pmcid
 - vaccine_name
 - vaccine_target_pathogen 
@@ -106,3 +106,4 @@ Run the program:
 
 
 After the program starts running, you should see a stream of data in the terminal. You can see the entries being made in real time in your output file.
+
