@@ -15,14 +15,14 @@ from langchain_core.output_parsers import JsonOutputParser
 
 
 class paperToData:
-    def __init__(self, input_file, parsed_pmcids_file, csv_file, error_file, email, mode="full_text"):
+    def __init__(self, input_file, parsed_pmids_file, csv_file, error_file, email, mode="full_text"):
         # Setup Directories
         self.base_dir = os.path.dirname(os.path.abspath(__file__))
         
         print(f"Project Root detected as: {self.base_dir}")
         
         self.input_file = os.path.join(self.base_dir, "input", input_file)
-        self.parsed_pmcids_file = os.path.join(self.base_dir, "parsed", parsed_pmcids_file)
+        self.parsed_pmids_file = os.path.join(self.base_dir, "parsed", parsed_pmids_file)
         self.csv_file = os.path.join(self.base_dir, "output", csv_file)
         self.error_file = os.path.join(self.base_dir, "error", error_file)
         
@@ -41,8 +41,8 @@ class paperToData:
 
     def getParsed(self):
         parsed = set()
-        if os.path.exists(self.parsed_pmcids_file):
-            with open(self.parsed_pmcids_file, mode="r") as file:
+        if os.path.exists(self.parsed_pmids_file):
+            with open(self.parsed_pmids_file, mode="r") as file:
                 for line in file:
                     parsed.add(line.strip())
         return parsed
@@ -117,9 +117,9 @@ class paperToData:
                 file.write(f"{pmcid} failed to fetch/clean: {e}\n")
             return None, None
 
-    def fetch_abstract(self, pmcid):
+    def fetch_abstract(self, pmid):
         time.sleep(0.35)
-        handle = Entrez.efetch(db="pmc", id=pmcid, rettype="abstract", retmode="xml")
+        handle = Entrez.efetch(db="pubmed", id=pmid, rettype="abstract", retmode="xml")
         response = handle.read()
         handle.close()
         soup = BeautifulSoup(response, "xml")
@@ -168,7 +168,7 @@ class paperToData:
             return None
 
     def merge_json(self, data_dict):
-        fieldnames = ["pmcid", "paper_type", "vaccine_name", "vaccine_name_generated", 
+        fieldnames = ["pmid", "paper_type", "vaccine_name", "vaccine_name_generated", 
                       "vaccine_target_pathogen", "vaccine_target_host", "vaccine_model_host", 
                       "vaccine_delivery_method", "vaccine_manufacturer", "vaccine_storage_method", 
                       "vaccine_stage", "vaccine_license", "vaccine_antigen", 
@@ -190,37 +190,54 @@ class paperToData:
         pmid = pmid.strip()
         if not pmid: return
 
-        pmcid = self.convert_pmid_to_pmcid(pmid)
+        pmcid = ""
+        if self.mode == "full_text":
+            pmcid = self.convert_pmid_to_pmcid(pmid)
         
-        if pmcid and pmcid not in self.parsed:
-            print(f"Processing {pmcid}...")
+        if pmid and pmid not in self.parsed:
+            print(f"Processing {pmid}...")
             
             full_text_content = ""
+
+            if self.mode == "full_text":
+                if not pmcid:
+                    with open(self.error_file, mode="a") as file:
+                        file.write(f"{pmid} failed to convert\n")
+                    return
             
             if self.mode == "full_text":
                 abstract, full_text = self.fetch_full_text_pmcid(pmcid)
                 if not full_text: return
                 full_text_content = full_text
             else:
-                full_text_content = self.fetch_abstract(pmcid)
+                full_text_content = self.fetch_abstract(pmid)
             
             # Get JSON from LLM
             extracted_data = self.create_text_json(full_text_content)
             
             if extracted_data:
-                extracted_data["pmcid"] = pmcid
+                if isinstance(extracted_data, list):
+                    if len(extracted_data) > 0:
+                        extracted_data = extracted_data[0]
+                    else:
+                        print("empty list return")
+                        return
+                if not isinstance(extracted_data, dict):
+                    print(f"recived extracted data of type {type(extracted_data)}")
+                    return
+                extracted_data["pmid"] = pmid
                 extracted_data["paper_type"] = self.mode
                 self.merge_json(extracted_data)
                 
                 # Update parsed file
-                with open(self.parsed_pmcids_file, "a") as f:
-                    f.write(pmcid + "\n")
+                with open(self.parsed_pmids_file, "a") as f:
+                    f.write(pmid + "\n")
         
         elif not pmcid:
             with open(self.error_file, mode="a") as file:
                 file.write(f"{pmid} failed to convert to PMCID\n")
         else:
-            print(f"Skipping {pmcid}, already parsed.")
+            print(f"Skipping {pmid}, already parsed.")
 
     def start(self):
         count = 0
